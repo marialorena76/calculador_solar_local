@@ -1,0 +1,11 @@
+{
+    "userType": "basico",
+    "location": {
+        "lat": -34.6037,
+        "lng": -58.3816
+    },
+    "installationType": "Residencial",
+    "incomeLevel": "ALTO",
+    "totalAnnualConsumption": 5000,
+    "selectedCurrency": "Pesos argentinos"
+}
