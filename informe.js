@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return; // Detiene la ejecución si no hay datos
     }
 
-    // Función auxiliar para poblar elementos
+    // Función auxiliar para poblar elementos (si aún se necesita para otros campos)
     function setTextContent(id, value) {
         const element = document.getElementById(id);
         if (element) {
@@ -46,45 +46,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- NUEVA FUNCIÓN PARA POBLAR EL REPORTE DINÁMICO ---
+    function poblarReporteBasico(reporteData) {
+        const tbody = document.getElementById('reporte-basico-body');
+        if (!tbody) {
+            console.error("El cuerpo de la tabla con ID 'reporte-basico-body' no fue encontrado.");
+            return;
+        }
+        tbody.innerHTML = ''; // Limpiar cualquier contenido existente
+
+        reporteData.forEach(item => {
+            const tr = document.createElement('tr');
+
+            const tdDescripcion = document.createElement('td');
+            tdDescripcion.textContent = item.descripcion;
+
+            const tdValor = document.createElement('td');
+            // Formatear el valor si es un número, de lo contrario mostrarlo como está
+            let valorMostrado = item.valor;
+            const valorNumerico = parseFloat(item.valor);
+            if (!isNaN(valorNumerico)) {
+                // Formatear a 2 decimales si es un número flotante
+                valorMostrado = Number.isInteger(valorNumerico) ? valorNumerico.toString() : valorNumerico.toFixed(2);
+            }
+
+            tdValor.textContent = `${valorMostrado} ${item.unidad || ''}`.trim();
+            tdValor.style.textAlign = 'right'; // Alinear valor a la derecha para mejor legibilidad
+
+            tr.appendChild(tdDescripcion);
+            tr.appendChild(tdValor);
+            tbody.appendChild(tr);
+        });
+    }
+
     // Poblar los datos del informe en el HTML
-    // Resumen General
+    // Mantener los campos que siguen existiendo, como el resumen general y la contribución climática
     setTextContent('consumo-anual', datos.consumo_anual?.toFixed(2) || 'N/A');
-    setTextContent('generacion-anual', datos.generacion_anual?.toFixed(2) || 'N/A');
-    setTextContent('autoconsumo', datos.autoconsumo?.toFixed(2) || 'N/A');
-    setTextContent('inyectada-red', datos.inyectada_red?.toFixed(2) || 'N/A');
+    // Los siguientes campos ya no existen en el HTML, por lo que se pueden eliminar o comentar
+    // setTextContent('generacion-anual', datos.generacion_anual?.toFixed(2) || 'N/A');
+    // setTextContent('autoconsumo', datos.autoconsumo?.toFixed(2) || 'N/A');
+    // setTextContent('inyectada-red', datos.inyectada_red?.toFixed(2) || 'N/A');
 
-    // Datos de la Instalación Propuesta
-    setTextContent('potencia-paneles', datos.potencia_paneles?.toFixed(2) || 'N/A');
-    setTextContent('cantidad-paneles', datos.cantidad_paneles || 'N/A');
-    setTextContent('superficie', datos.superficie?.toFixed(2) || 'N/A');
-    setTextContent('vida-util', datos.vida_util || 'N/A');
+    // Llamar a la nueva función para poblar la tabla dinámica
+    if (datos.reporte_basico && Array.isArray(datos.reporte_basico)) {
+        poblarReporteBasico(datos.reporte_basico);
+    } else {
+        console.warn('No se encontró el array "reporte_basico" en los datos del informe.');
+    }
 
-    // Nuevos campos del Paso 5, 6 y 7
-    setTextContent('tipo-panel-informe', datos.panelesSolares?.tipo || 'N/A');
-    setTextContent('potencia-inversor-informe', (datos.inversor?.potenciaNominal?.toFixed(2) || 'N/A') + ' kW');
-    setTextContent('tipo-inversor-informe', datos.inversor?.tipo || 'N/A');
-    setTextContent('eficiencia-panel-informe', (datos.perdidas?.eficienciaPanel?.toFixed(1) || 'N/A') + '%');
-    setTextContent('eficiencia-inversor-informe', (datos.perdidas?.eficienciaInversor?.toFixed(1) || 'N/A') + '%');
-    setTextContent('factor-perdidas-informe', (datos.perdidas?.factorPerdidas?.toFixed(1) || 'N/A') + '%');
-
-
-    // Análisis Económico - Asegurarse de que la moneda se muestre correctamente
-    const monedaSimbolo = datos.moneda === 'Dólares' ? 'U$D' : '$'; // O el símbolo que prefieras para Pesos Argentinos
-    const currencyElements = document.querySelectorAll('[id^="moneda-display"]');
-    currencyElements.forEach(el => {
-        el.textContent = monedaSimbolo;
-    });
-
-    setTextContent('costo-actual', datos.costo_actual?.toFixed(2) || 'N/A');
-    setTextContent('inversion-inicial', datos.inversion_inicial?.toFixed(2) || 'N/A');
-    setTextContent('mantenimiento', datos.mantenimiento?.toFixed(2) || 'N/A');
-    setTextContent('costo-futuro', datos.costo_futuro?.toFixed(2) || 'N/A');
-    setTextContent('ingreso-red', datos.ingreso_red?.toFixed(2) || 'N/A');
-    setTextContent('resumen-economico', datos.resumen_economico || 'N/A');
-
-
-    // Contribución al Cambio Climático
-    setTextContent('emisiones', datos.emisiones?.toFixed(2) || 'N/A');
+    // Contribución al Cambio Climático (si todavía existe esta sección)
+    // Suponiendo que 'emisiones' es un valor que quieres mostrar y que la sección existe
+    // Si 'emisiones' ahora viene dentro de 'reporte_basico', esta línea ya no es necesaria.
+    // Si es un campo separado, puedes mantenerlo. Por ahora lo comento.
+    // setTextContent('emisiones', datos.emisiones?.toFixed(2) || 'N/A');
 
 
     // Descargar PDF con html2pdf.js

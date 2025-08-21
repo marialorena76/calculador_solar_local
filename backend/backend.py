@@ -7,8 +7,12 @@ import os
 app = Flask(__name__)
 CORS(app) # Habilita CORS para permitir solicitudes desde el frontend
 
-# Ruta donde estará tu archivo Excel en el servidor
-EXCEL_FILE_PATH = 'Calculador Solar - web 06-24_con ayuda - modificaciones 2025_5.xlsx'
+# Construir la ruta absoluta al archivo Excel
+# __file__ es la ruta al script actual (backend.py)
+# os.path.dirname() obtiene el directorio de ese script
+# os.path.join() une el directorio con el nombre del archivo
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EXCEL_FILE_PATH = os.path.join(BASE_DIR, 'Calculador Solar - web 06-24_con ayuda - modificaciones 2025_5.xlsx')
 
 # --- NUEVA RUTA: Para obtener la lista de electrodomésticos y sus consumos ---
 @app.route('/api/electrodomesticos', methods=['GET'])
@@ -86,91 +90,51 @@ def generar_informe():
         return jsonify({"error": "No se recibieron datos"}), 400
 
     try:
-        print(f"DEBUG: Leyendo Excel para informe: {EXCEL_FILE_PATH}")
-        df_resultados = pd.read_excel(EXCEL_FILE_PATH, sheet_name='Resultados', engine='openpyxl', decimal=',')
-        print("DEBUG: Hoja 'Resultados' leída.")
-        df_area_trabajo = pd.read_excel(EXCEL_FILE_PATH, sheet_name='Area de trabajo', engine='openpyxl', decimal=',')
-        print("DEBUG: Hoja 'Area de trabajo' leída.")
+        # --- LECTURA DEL INFORME DEL USUARIO BÁSICO ---
+        # Lee el rango específico B5:D48 de la hoja 'Resultados'
+        df_informe_basico = pd.read_excel(
+            EXCEL_FILE_PATH,
+            sheet_name='Resultados',
+            engine='openpyxl',
+            decimal=',',
+            header=None,  # No hay fila de encabezado en el rango que leemos
+            usecols="B:D",
+            skiprows=4,  # Omitir las primeras 4 filas para empezar en B5
+            nrows=44     # Leer 44 filas (de la 5 a la 48 inclusive)
+        )
 
-        # Acceder a los datos de electrodomésticos y consumo total
-        electrodomesticos_seleccionados = user_data.get('electrodomesticos', {})
-        consumo_mensual_kwh = user_data.get('totalMonthlyConsumption', 0)
-        consumo_anual_kwh = user_data.get('totalAnnualConsumption', 0)
-        latitud = user_data.get('location', {}).get('lat', -34.6037) # Valor por defecto si no se encuentra
-        longitud = user_data.get('location', {}).get('lng', -58.3816) # Valor por defecto
+        # Renombrar columnas para facilidad de uso
+        df_informe_basico.columns = ['descripcion', 'valor', 'unidad']
 
-        print(f"DEBUG: Electrodomésticos seleccionados (para informe): {electrodomesticos_seleccionados}")
-        print(f"DEBUG: Consumo mensual estimado (kWh, para informe): {consumo_mensual_kwh}")
-        print(f"DEBUG: Consumo anual estimado (kWh, para informe): {consumo_anual_kwh}")
-        print(f"DEBUG: Latitud: {latitud}, Longitud: {longitud}")
+        # Convertir el DataFrame a una lista de diccionarios
+        # y manejar los valores NaN (Not a Number) que pandas puede generar
+        informe_basico_lista = []
+        for index, row in df_informe_basico.iterrows():
+            # Omitir filas donde la descripción esté vacía
+            if pd.isna(row['descripcion']) or str(row['descripcion']).strip() == "":
+                continue
 
-        # Aquí es donde integrarías el consumo_mensual_kwh en tus cálculos para el informe
-        # Ejemplo (muy simplificado, ajusta según tu lógica del Excel):
-        # Necesitarás una lógica para mapear este consumo a la potencia del sistema o a los datos de las tablas.
+            informe_basico_lista.append({
+                'descripcion': str(row['descripcion']),
+                # Reemplazar NaN con string vacío o 0, según prefieras
+                'valor': str(row['valor']) if not pd.isna(row['valor']) else '',
+                'unidad': str(row['unidad']) if not pd.isna(row['unidad']) else ''
+            })
 
-        # Suponiendo que tu hoja 'Resultados' tiene alguna lógica basada en el consumo anual
-        # Buscar la fila que corresponde al consumo anual o interpolar.
-        # Esto es un placeholder; la lógica real dependerá de cómo tu Excel calcula los resultados.
-        # Ejemplo simplificado de cómo podrías buscar un valor en el Excel:
-        # Potencia nominal del sistema (kWp) - EJEMPLO DE CÓMO OBTENER UN DATO
-        # Esta es la parte CLAVE donde tienes que vincular el consumo_anual_kwh
-        # con los datos de tu Excel para obtener la potencia del sistema o el dimensionamiento.
+        print(f"DEBUG: {len(informe_basico_lista)} filas de informe básico leídas de Resultados B5:D48.")
 
-        # Asumo que en la hoja 'Resultados' o 'Area de trabajo' tienes tablas para dimensionar.
-        # Por ejemplo, si tienes una tabla que relaciona kWh/año con kWp necesarios:
-        # df_dimensionamiento = df_area_trabajo[['Consumo Anual (kWh)', 'Potencia Sistema (kWp)']] # Nombres de columnas de tu Excel
-        # potencia_sistema_kwp = df_dimensionamiento.loc[df_dimensionamiento['Consumo Anual (kWh)'] >= consumo_anual_kwh, 'Potencia Sistema (kWp)'].min()
-        # if pd.isna(potencia_sistema_kwp):
-        #     potencia_sistema_kwp = df_dimensionamiento['Potencia Sistema (kWp)'].max() # O un valor por defecto / error
-
-        # Datos de ejemplo para el informe (AJUSTA ESTO CON TUS CÁLCULOS REALES)
+        # --- PREPARACIÓN DE LA RESPUESTA FINAL ---
+        # El objeto de respuesta ahora contendrá el informe básico y otros datos necesarios
         informe_final = {
-            "potencia_sistema_kwp": 0, # <-- Debes calcular esto
-            "energia_generada_anual": consumo_anual_kwh, # <-- Esto viene del frontend
-            "area_paneles_m2": 0, # <-- Debes calcular esto
-            "numero_paneles": 0, # <-- Debes calcular esto
-            "tipo_inversor": user_data.get('inversor', {}).get('tipo', 'No Definido'),
-            "potencia_inversor_kwa": user_data.get('inversor', {}).get('potenciaNominal', 0),
-            "costo_actual": 0, # <-- Debes calcular esto
-            "inversion_inicial": 0, # <-- Debes calcular esto
-            "mantenimiento": 0, # <-- Debes calcular esto
-            "costo_futuro": 0, # <-- Debes calcular esto
-            "ingreso_red": 0, # <-- Debes calcular esto
-            "resumen_economico": "Cálculo pendiente...", # <-- Debes generar un resumen
-            "emisiones": 0, # <-- Debes calcular esto
-            "moneda": user_data.get('selectedCurrency', 'Pesos argentinos')
+            # Datos que ya tenías (puedes mantenerlos o eliminarlos si no son necesarios)
+            "consumo_anual": user_data.get('totalAnnualConsumption', 0),
+            "moneda": user_data.get('selectedCurrency', 'Pesos argentinos'),
+
+            # El nuevo informe detallado del Excel
+            "reporte_basico": informe_basico_lista
         }
 
-        # Ejemplo de cómo podrías obtener un valor de una celda específica (ej. A2 de la hoja Resultados)
-        # Esto es solo un ejemplo, no copies y pegues sin entender su uso.
-        # dato_ejemplo = df_resultados.iloc[1, 0] # Fila 2, Columna A
-
-        # Asumo que la hoja 'Resultados' ya tiene los cálculos listos y solo necesitas
-        # obtener los valores de celdas específicas después de algún tipo de "lookup"
-        # o "simulación" que el Excel haría internamente.
-
-        # Dada la estructura de tu Excel y la descripción, parece que necesitas
-        # buscar los resultados finales en la hoja 'Resultados' o 'Area de trabajo'
-        # basándose en el 'consumo_anual_kwh' y otros parámetros del usuario.
-
-        # Aquí deberías implementar la lógica para leer las celdas adecuadas del Excel
-        # que contienen los resultados finales (potencia del sistema, costos, etc.)
-        # basándote en los datos recibidos del frontend (especialmente el consumo).
-
-        # Placeholder: Rellenar con lógica real de Excel
-        # Por ejemplo, si tienes una celda en 'Resultados' que te da la potencia en base al consumo:
-        # informe_final['potencia_sistema_kwp'] = df_resultados.loc[df_resultados['columna_consumo'] >= consumo_anual_kwh, 'columna_potencia'].iloc[0]
-        # o simplemente leer celdas fijas si tu Excel ya hace el cálculo complejo.
-
-        # SI TU EXCEL YA TIENE TODA LA LÓGICA DE CÁLCULO
-        # Y SÓLO NECESITAS BUSCAR VALORES EN CELDAS ESPECÍFICAS BASADO EN LA ENTRADA:
-        # Tendrías que saber qué celdas leer y cómo se relacionan con los inputs.
-        # Por ejemplo:
-        # informe_final['potencia_sistema_kwp'] = df_resultados.at[fila_potencia, columna_potencia]
-        # Esto es complejo sin saber la estructura exacta de tu Excel.
-        # Por ahora, los valores del informe final serán 0 o N/A hasta que implementes la lectura del Excel.
-
-        print(f"DEBUG: informe_final (simplificado) a punto de ser enviado: {informe_final}")
+        print(f"DEBUG: informe_final a punto de ser enviado: {informe_final}")
         return jsonify(informe_final)
 
     except FileNotFoundError:
