@@ -255,71 +255,80 @@ function calcularConsumo() {
 // --- Lógica del Mapa (EXISTENTE, CON PEQUEÑAS MEJORAS) ---
 
 function initMap() {
-    // CORRECCIÓN: Si el mapa ya está inicializado, lo destruimos para evitar errores de doble inicialización
-    if (map) {
-        map.remove();
-    }
-    map = L.map('map').setView(userLocation, 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+    try {
+        // CORRECCIÓN: Si el mapa ya está inicializado, lo destruimos para evitar errores de doble inicialización
+        if (map) {
+            map.remove();
+        }
+        map = L.map('map').setView(userLocation, 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-    marker = L.marker(userLocation).addTo(map);
-    if (latitudDisplay) latitudDisplay.value = userLocation.lat.toFixed(6);
-    if (longitudDisplay) longitudDisplay.value = userLocation.lng.toFixed(6);
-
-    map.on('click', function(e) {
-        userLocation.lat = e.latlng.lat;
-        userLocation.lng = e.latlng.lng;
-        marker.setLatLng(userLocation);
+        marker = L.marker(userLocation).addTo(map);
         if (latitudDisplay) latitudDisplay.value = userLocation.lat.toFixed(6);
         if (longitudDisplay) longitudDisplay.value = userLocation.lng.toFixed(6);
-        userSelections.location = userLocation; // Guardar la ubicación en userSelections
-        saveUserSelections(); // Guardar las selecciones en localStorage
-    });
 
-    // Asegúrate de que el geocodificador esté importado correctamente en tu HTML
-    // <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-    const geocoderControlInstance = L.Control.geocoder({
-        placeholder: 'Buscar o ingresar dirección...',
-        errorMessage: 'No se encontró la dirección.'
-        // defaultMarkGeocode: true, // Let control handle its own marker by default
-    }).on('markgeocode', function(e) {
-        if (e.geocode && e.geocode.center) {
-            userLocation.lat = e.geocode.center.lat;
-            userLocation.lng = e.geocode.center.lng;
-            
-            // The control's default behavior will place/update its own marker.
-            // If a separate 'marker' variable is used for map clicks, ensure they coordinate
-            // or let the geocoder manage its marker exclusively.
-            // For simplicity, if 'marker' is primarily for map clicks,
-            // we might not need to call marker.setLatLng(userLocation) here if defaultMarkGeocode is true.
-            // However, to ensure OUR 'marker' (from map clicks) is also updated:
-            if (marker) { // Check if 'marker' (from map clicks) exists
-                marker.setLatLng(userLocation);
-            } else { // If no map-click marker exists yet, create one
-                marker = L.marker(userLocation).addTo(map);
-            }
-            
-            map.setView(userLocation, 13); // Center map on geocoded location
-
+        map.on('click', function(e) {
+            userLocation.lat = e.latlng.lat;
+            userLocation.lng = e.latlng.lng;
+            marker.setLatLng(userLocation);
             if (latitudDisplay) latitudDisplay.value = userLocation.lat.toFixed(6);
             if (longitudDisplay) longitudDisplay.value = userLocation.lng.toFixed(6);
-            userSelections.location = userLocation;
-            saveUserSelections();
-        }
-    }).addTo(map);
+            userSelections.location = userLocation; // Guardar la ubicación en userSelections
+            saveUserSelections(); // Guardar las selecciones en localStorage
+        });
 
-    // Relocate the geocoder DOM element
-    const geocoderElement = geocoderControlInstance.getContainer();
-    const customGeocoderContainer = document.getElementById('geocoder-container');
-    
-    if (customGeocoderContainer && geocoderElement) {
-        customGeocoderContainer.innerHTML = ''; // Clear the container first if it has placeholder content or old controls
-        customGeocoderContainer.appendChild(geocoderElement);
-    } else {
-        if (!customGeocoderContainer) console.error('Custom geocoder container (geocoder-container) not found.');
-        if (!geocoderElement) console.error('Geocoder control element (geocoderElement) not found.');
+        // Asegúrate de que el geocodificador esté importado correctamente en tu HTML
+        // <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+        const geocoderControlInstance = L.Control.geocoder({
+            placeholder: 'Buscar o ingresar dirección...',
+            errorMessage: 'No se encontró la dirección.'
+            // defaultMarkGeocode: true, // Let control handle its own marker by default
+        }).on('markgeocode', function(e) {
+            if (e.geocode && e.geocode.center) {
+                userLocation.lat = e.geocode.center.lat;
+                userLocation.lng = e.geocode.center.lng;
+
+                // The control's default behavior will place/update its own marker.
+                // If a separate 'marker' variable is used for map clicks, ensure they coordinate
+                // or let the geocoder manage its marker exclusively.
+                // For simplicity, if 'marker' is primarily for map clicks,
+                // we might not need to call marker.setLatLng(userLocation) here if defaultMarkGeocode is true.
+                // However, to ensure OUR 'marker' (from map clicks) is also updated:
+                if (marker) { // Check if 'marker' (from map clicks) exists
+                    marker.setLatLng(userLocation);
+                } else { // If no map-click marker exists yet, create one
+                    marker = L.marker(userLocation).addTo(map);
+                }
+
+                map.setView(userLocation, 13); // Center map on geocoded location
+
+                if (latitudDisplay) latitudDisplay.value = userLocation.lat.toFixed(6);
+                if (longitudDisplay) longitudDisplay.value = userLocation.lng.toFixed(6);
+                userSelections.location = userLocation;
+                saveUserSelections();
+            }
+        }).addTo(map);
+
+        // Relocate the geocoder DOM element
+        const geocoderElement = geocoderControlInstance.getContainer();
+        const customGeocoderContainer = document.getElementById('geocoder-container');
+
+        if (customGeocoderContainer && geocoderElement) {
+            customGeocoderContainer.innerHTML = ''; // Clear the container first if it has placeholder content or old controls
+            customGeocoderContainer.appendChild(geocoderElement);
+        } else {
+            if (!customGeocoderContainer) console.error('Custom geocoder container (geocoder-container) not found.');
+            if (!geocoderElement) console.error('Geocoder control element (geocoderElement) not found.');
+        }
+    } catch (error) {
+        console.error("Error al inicializar el mapa. Es posible que las librerías de Leaflet no se hayan cargado correctamente. Verifique la conexión a internet y los enlaces en calculador.html.", error);
+        // Opcional: Mostrar un mensaje al usuario en la UI
+        const mapDiv = document.getElementById('map');
+        if (mapDiv) {
+            mapDiv.innerHTML = '<p style="padding: 20px; text-align: center;">El mapa no pudo cargarse. Por favor, verifique su conexión a internet.</p>';
+        }
     }
 }
 
