@@ -68,14 +68,23 @@ function saveUserSelections() {
 function loadUserSelections() {
     const savedSelections = localStorage.getItem('userSelections');
     if (savedSelections) {
-        userSelections = JSON.parse(savedSelections);
-        console.log('User selections cargadas:', userSelections);
-        // Asegurarse de que userLocation esté actualizado si se cargó de localStorage
-        if (userSelections.location) {
-            userLocation = userSelections.location;
+        try {
+            const parsedSelections = JSON.parse(savedSelections);
+            // Fusionar los datos guardados con el objeto por defecto para asegurar que todas las claves existan
+            userSelections = { ...userSelections, ...parsedSelections };
+            console.log('User selections cargadas y fusionadas:', userSelections);
+
+            // Asegurarse de que userLocation esté actualizado si se cargó de localStorage
+            if (userSelections.location) {
+                userLocation = userSelections.location;
+            }
+            // También actualiza la UI para los campos no-electrodomésticos
+            updateUIFromSelections();
+        } catch (error) {
+            console.error('Error al parsear o fusionar userSelections desde localStorage:', error);
+            // Opcional: limpiar el localStorage si está corrupto
+            // localStorage.removeItem('userSelections');
         }
-        // También actualiza la UI para los campos no-electrodomésticos
-        updateUIFromSelections();
     }
 }
 
@@ -113,8 +122,12 @@ function updateUIFromSelections() {
     }
 
     // Actualizar displays de consumo (se recalcularán con calcularConsumo después de cargar electrodomésticos)
-    if (totalConsumoMensualDisplay) totalConsumoMensualDisplay.value = userSelections.totalMonthlyConsumption.toFixed(2);
-    if (totalConsumoAnualDisplay) totalConsumoAnualDisplay.value = userSelections.totalAnnualConsumption.toFixed(2);
+    if (totalConsumoMensualDisplay) {
+        totalConsumoMensualDisplay.value = (userSelections.totalMonthlyConsumption || 0).toFixed(2);
+    }
+    if (totalConsumoAnualDisplay) {
+        totalConsumoAnualDisplay.value = (userSelections.totalAnnualConsumption || 0).toFixed(2);
+    }
 
     // Si tienes inputs para paneles, inversor o pérdidas que guardas en userSelections, actualízalos aquí también
     const tipoPanelInput = document.getElementById('tipo-panel'); // Asegúrate que este ID exista en tu HTML
