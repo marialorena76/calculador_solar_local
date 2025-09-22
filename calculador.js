@@ -1,5 +1,8 @@
 console.log('🤖 calculador.js cargado - flujo de controlador ajustado y persistencia de datos');
 
+// Define la URL base para la API. Usa el origen de la ventana si está disponible, si no, usa un valor predeterminado.
+const API_BASE_URL = window.location.origin.startsWith('http') ? window.location.origin.replace(/\/$/, '') : 'https://proinged.com';
+
 let map, marker;
 let userLocation = { lat: -34.6037, lng: -58.3816 }; // Buenos Aires por defecto
 
@@ -163,7 +166,7 @@ function updateUIFromSelections() {
 
 async function cargarElectrodomesticosDesdeBackend() {
     try {
-        const response = await fetch('http://127.0.0.1:5000/api/electrodomesticos');
+        const response = await fetch(`${API_BASE_URL}/api/electrodomesticos`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -175,7 +178,7 @@ async function cargarElectrodomesticosDesdeBackend() {
         calcularConsumo(); // Recalcula el consumo con los datos cargados y cantidades del usuario
     } catch (error) {
         console.error('No se pudieron cargar los electrodomésticos desde el backend:', error);
-        alert('No se pudieron cargar los electrodomésticos. Usando datos de respaldo. Asegúrate de que tu backend esté corriendo y sea accesible en http://127.0.0.1:5000');
+        alert(`No se pudieron cargar los electrodomésticos. Usando datos de respaldo. Asegúrate de que tu backend esté corriendo y sea accesible en ${API_BASE_URL}`);
         // Datos de respaldo en caso de falla para desarrollo/prueba
         electrodomesticosCategorias = {
             "Cocina": [
@@ -681,7 +684,7 @@ function setupNavigationButtons() {
 
             try {
                 // Envía TODOS los userSelections al backend
-                const response = await fetch('http://127.0.0.1:5000/api/generar_informe', {
+                const response = await fetch(`${API_BASE_URL}/api/generar_informe`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
