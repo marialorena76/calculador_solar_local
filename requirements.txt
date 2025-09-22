@@ -1,0 +1,6 @@
+Flask
+gunicorn
+flask-cors
+pandas
+openpyxl
+tabulate
