@@ -6,7 +6,12 @@ function App() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/status')
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+        const endpoint = baseUrl.endsWith('/')
+          ? `${baseUrl}status`
+          : `${baseUrl}/status`
+
+        const response = await fetch(endpoint)
 
         if (!response.ok) {
           throw new Error(`Respuesta inesperada: ${response.status}`)
