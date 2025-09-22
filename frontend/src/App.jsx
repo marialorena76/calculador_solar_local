@@ -6,7 +6,9 @@ function App() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
+        const baseUrl =
+          import.meta.env.VITE_API_BASE_URL ??
+          (import.meta.env.DEV ? 'http://localhost:5000/api' : '/api')
         const endpoint = baseUrl.endsWith('/')
           ? `${baseUrl}status`
           : `${baseUrl}/status`
