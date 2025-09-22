@@ -7,6 +7,11 @@ import os
 app = Flask(__name__)
 CORS(app) # Habilita CORS para permitir solicitudes desde el frontend
 
+# Endpoint simple para comprobar el estado del backend
+@app.route('/api/status', methods=['GET'])
+def api_status():
+    return jsonify({"message": "Backend operativo"})
+
 # Construir la ruta absoluta al archivo Excel
 # __file__ es la ruta al script actual (backend.py)
 # os.path.dirname() obtiene el directorio de ese script
