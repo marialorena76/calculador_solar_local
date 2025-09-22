@@ -12,6 +12,8 @@ CORS(app) # Habilita CORS para permitir solicitudes desde el frontend
 # os.path.dirname() obtiene el directorio de ese script
 # os.path.join() une el directorio con el nombre del archivo
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Directorio que contiene los archivos HTML/estáticos del frontend (calculador.html vive en la raíz del repo)
+FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, os.pardir))
 EXCEL_FILE_PATH = os.path.join(BASE_DIR, 'Calculador Solar - web 06-24_con ayuda - modificaciones 2025_5.xlsx')
 
 # --- NUEVA RUTA: Para obtener la lista de electrodomésticos y sus consumos ---
@@ -152,12 +154,12 @@ def generar_informe():
 # Opcional: Rutas para servir los archivos estáticos de tu frontend
 @app.route('/')
 def serve_calculador_html():
-    return send_from_directory('.', 'calculador.html')
+    return send_from_directory(FRONTEND_DIR, 'calculador.html')
 
 @app.route('/<path:path>')
 def serve_static_files(path):
-    # Asegúrate de que los archivos estén en la misma carpeta que 'backend.py'
-    return send_from_directory('.', path)
+    # Los archivos estáticos viven junto a calculador.html (en la raíz del repositorio)
+    return send_from_directory(FRONTEND_DIR, path)
 
 if __name__ == '__main__':
     app.run(debug=True)
